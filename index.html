@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Memory Graph</title>
+<script type="text/javascript" src =js/libs/jquery/jquery.min.js></script>
+<script type="text/javascript" src =js/libs/highcharts/highcharts.js></script>  <!--use highcharts lib to display memory into chart -->
+<script type="text/javascript" src =js/libs/highcharts/modules/exporting.js></script>
+<script src="js/libs/jquery.csv-0.71.js"></script><!--use jquery.csv lib(https://code.google.com/p/jquery-csv/) to read python csv into javascript -->
+<script type="text/javascript">
+		jQuery.noConflict();
+
+		var example = 'dynamic-update', 
+		theme = 'default';
+
+		(function($){ // encapsulate jQuery
+			$(function () {
+    $(document).ready(function () {
+        Highcharts.setOptions({
+            global: {
+                useUTC: false
+            }
+        });
+
+        $('#container').highcharts({
+            chart: {
+                type: 'spline',
+                animation: Highcharts.svg, // don't animate in old IE
+                marginRight: 10,
+                events: {
+                    load: function () {
+		                var series = this.series[0];
+                        var m=0;
+						 // read test2.csv every one second
+						setInterval(function () {
+                      //read test2.csv into data array using jquery.csv-0.71.js lib
+					  $.ajax({
+					  url: "test2.csv",
+					  async: false,
+					  success: function (csvd) {
+					   data = $.csv2Array(csvd);   //use jquery.csv-0.71.js lib to read csv into array
+					   //alert(data);
+					   m=data[0][1];
+					  },
+					  dataType: "text",
+					  });}, 1000);
+							//update graph every second			
+						setInterval(function(){
+                         var x = (new Date()).getTime(), // current time
+                                y=parseFloat(m);   //parse array string data into float to pass into graph as a point
+								series.addPoint([x, y], true, true);
+                        }, 1000);
+		
+                    }
+                }
+            },
+            title: {
+                text: 'Live Memory data against time'
+            },
+            xAxis: {
+			title: {
+                    text: 'Time'
+                },
+                type: 'datetime',
+                tickPixelInterval: 150
+            },
+            yAxis: {
+                title: {
+                    text: 'Memory(GB)'
+                },
+                plotLines: [{
+                    value: 0,
+                    width: 1,
+                    color: '#808080'
+                }]
+            },
+            tooltip: {
+                formatter: function () {
+                    return '<b>' + this.series.name + '</b><br/>' +
+                        Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' +
+                        Highcharts.numberFormat(this.y , 2) + 'GB';
+                }
+            },
+            legend: {
+                enabled: false
+            },
+            exporting: {
+                enabled: false
+            },
+            series: [{
+                name: 'Memory',
+                data: (function () {
+                    // initialize graph with 10 initial points with value 0
+                    var data = [],
+                        time = (new Date()).getTime(),
+                        i;
+                    for (i = -9; i <= 0; i += 1) {
+					data.push({
+                            x: time + i * 1000,
+                            y:0
+                        });
+                    }
+                    return data;
+                }())
+            }]
+        });
+    });
+});		})(jQuery);
+	</script>
+
+</head>
+<body>
+<div id="container" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
+</body>
+</html>
